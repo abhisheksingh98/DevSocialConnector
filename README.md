@@ -9,7 +9,8 @@ A social networking platform for devs.
 https://github.com/abhisheksingh98/DevSocialConnector.git
 
 # Install dependencies
-cd DevSocialConnector && npm run install
+cd DevSocialConnector
+npm install
 
 To run the development server on both backend and frontend:
 
