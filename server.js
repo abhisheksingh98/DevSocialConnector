@@ -1,21 +1,56 @@
 const express = require('express');
-const connectDB = require('./config/db');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const passport = require('passport');
+const path = require('path');
+
+const users = require('./routes/api/users');
+const profile = require('./routes/api/profile');
+const posts = require('./routes/api/posts');
+
 const app = express();
 
-//connect DB
-connectDB();
+// Body parser middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-//Init Middleware
-app.use(express.json({extended : false }));
+// DB Config
+const db = require('./config/keys').mongoURI;
 
-app.get('/', (req, res) => res.send('API running'));
+// Support for MongoDB 4+
+mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
+mongoose.set('useNewUrlParser', true);
+mongoose.set('useUnifiedTopology', true);
 
-// Define Routes
-app.use('/api/users', require('./routes/api/users'));
-app.use('/api/auth', require('./routes/api/auth'));
-app.use('/api/profile', require('./routes/api/profile'));
-app.use('/api/posts', require('./routes/api/posts'));
+// Connect to MongoDB
+mongoose
+	.connect(db)
+	.then(() => console.log('MongoDB Connected'))
+	.catch(err => console.log(`MongoDB Connection Error: ${err}`));
 
-const PORT = process.env.PORT || 5000;
+// Passport middleware
+app.use(passport.initialize());
 
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+// Passport Config
+require('./config/passport')(passport);
+
+// Use routes
+app.use('/api/users', users);
+app.use('/api/profile', profile);
+app.use('/api/posts', posts);
+
+// Serve static assets if in production
+if (process.env.NODE_ENV === 'production') {
+	// Set static folder
+	app.use(express.static('client/build'));
+
+	// Load the React index.html built file
+	app.get('*', (req, res) => {
+		res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
+	});
+}
+
+const port = process.env.PORT || 5000;
+
+app.listen(port, () => console.log(`Server running on port ${port}`));
